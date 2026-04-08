@@ -3,7 +3,7 @@ from pprint import pprint
 
 
 
-def print_all_files(path_str,base_path):
+def collect_file_metadata(path_str,base_path):
     path = Path(path_str).resolve()
     base_path = Path(base_path).resolve()
     keys = {}
@@ -15,7 +15,7 @@ def print_all_files(path_str,base_path):
                 "size" : item.stat().st_size
             }
         elif item.is_dir():
-            keys.update(print_all_files(item,base_path))
+            keys.update(collect_file_metadata(item,base_path))
         else:
             print("Path does not exist or is something else")
     return keys
@@ -25,8 +25,8 @@ def print_all_files(path_str,base_path):
 
 if __name__ == "__main__":
     source_directory = input("Enter the Source Directory: ")
-    source_directory_dict = print_all_files(source_directory,source_directory)
+    source_directory_dict = collect_file_metadata(source_directory,source_directory)
     pprint(source_directory_dict)
     destination_directory = input("Enter the Destination Directory: ")
-    destination_directory_dict = print_all_files(destination_directory,destination_directory)
+    destination_directory_dict = collect_file_metadata(destination_directory,destination_directory)
     pprint(destination_directory_dict)
