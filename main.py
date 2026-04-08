@@ -1,3 +1,5 @@
+
+
 from pathlib import Path
 from pprint import pprint
 
@@ -22,6 +24,31 @@ def collect_file_metadata(path_str,base_path):
     
 
 
+def compare_files(source,destination):
+    result = {
+        "new" : [],
+        "modified" : [],
+        "missing" : []
+    }
+
+    for key in source:
+        if key not in destination:
+            result["new"].append(key)
+        else:
+            if source[key]["size"] != destination[key]["size"]:
+                result["modified"].append(key)
+    
+    for key in destination:
+        if key not in source:
+            result["missing"].append(key)
+    
+
+    return result
+
+
+
+
+
 
 if __name__ == "__main__":
     source_directory = input("Enter the Source Directory: ")
@@ -30,3 +57,6 @@ if __name__ == "__main__":
     destination_directory = input("Enter the Destination Directory: ")
     destination_directory_dict = collect_file_metadata(destination_directory,destination_directory)
     pprint(destination_directory_dict)
+
+    sync_diff = compare_files(source_directory_dict,destination_directory_dict)
+    pprint(sync_diff)
