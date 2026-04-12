@@ -2,8 +2,14 @@
 
 from pathlib import Path
 from pprint import pprint
+import hashlib
 
-
+def get_file_hash(file_path , algo="sha256"):
+    hash_function = hashlib.new(algo)
+    with open(file_path , "rb") as f:
+        for chunk in iter(lambda: f.read(8192),b""):
+            hash_function.update(chunk)
+    return hash_function.hexdigest()
 
 def collect_file_metadata(path_str,base_path):
     path = Path(path_str).resolve()
@@ -14,7 +20,8 @@ def collect_file_metadata(path_str,base_path):
             keys[item.relative_to(base_path)] = {
                 "name" : item.name,
                 "extension" : item.suffixes,
-                "size" : item.stat().st_size
+                "size" : item.stat().st_size,
+                "hash" : get_file_hash(item)
             }
         elif item.is_dir():
             keys.update(collect_file_metadata(item,base_path))
@@ -37,6 +44,9 @@ def compare_files(source,destination):
         else:
             if source[key]["size"] != destination[key]["size"]:
                 result["modified"].append(key)
+            elif source[key]["hash"] != destination[key]["hash"]:
+                result["modified"].append(key)
+        
     
     for key in destination:
         if key not in source:
