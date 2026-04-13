@@ -1,8 +1,9 @@
 
 
 from pathlib import Path
-from pprint import pprint
 import hashlib
+import shutil
+import sys
 
 
 def format_size(size_in_bytes):
@@ -12,9 +13,44 @@ def format_size(size_in_bytes):
         size_in_bytes /= 1024
 
 
+
+def sync_to_destination(source_base,destination_base,diff):
+    source_base = Path(source_base)
+    destination_base = Path(destination_base)
+
+    for category in ["new","modified"]:
+        for relative_path in diff[category]:
+            src = source_base / relative_path
+            dst = destination_base / relative_path
+
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src , dst)
+
+
+
+def remove_missing(destination_base,diff):
+    destination_base = Path(destination_base)
+
+    for relative_path in diff['missing']:
+        path = destination_base / relative_path
+
+        if path.exists():
+            if path.is_file():
+                path.unlink()
+                print(f"Deleted file: {path}")
+
+
+
+
 def print_diff(diff):
     for category in ['new','modified','missing']:
-        print(f"")
+        print(f"\n{category.upper()}: ")
+        for item in sorted(diff.get(category , [])):
+            print(f" - {item}")
+            print("")
+
+
+
 def print_metadata(data,title):
     print(f"\n{title}")
 
@@ -24,6 +60,7 @@ def print_metadata(data,title):
         print(f"  Extension : {meta['extension']}")
         print(f"  Size      : {format_size(meta['size'])}")
         print(f"  Hash      : {meta['hash']}")
+        print("")
 
 
 
@@ -91,4 +128,28 @@ if __name__ == "__main__":
     print_metadata(destination_directory_dict,"Destination Path")
 
     sync_diff = compare_files(source_directory_dict,destination_directory_dict)
-    pprint(sync_diff)
+    print_diff(sync_diff)
+
+    while True:
+        print("Proceed with synchronization? (y/n):")
+        choice = input("Enter Choice: ").lower()
+
+        if choice == "n":
+            sys.exit()
+        elif choice == "y":
+            break
+        else:
+            print("Invalid Choice!!")
+    
+    sync_to_destination(source_directory,destination_directory,sync_diff)
+    while True:
+        print("Proceed with Deletion of unique files in destination? (y/n):")
+        choice = input("Enter Choice: ").lower()
+
+        if choice == "n":
+            sys.exit()
+        elif choice == "y":
+            break
+        else:
+            print("Invalid Choice!!")
+    remove_missing(destination_directory,sync_diff)
