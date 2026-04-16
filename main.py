@@ -5,6 +5,8 @@ import hashlib
 import shutil
 import sys
 
+DEBUG = False
+
 
 def format_size(size_in_bytes):
     for unit in ['B','KB','MB','GB','TB']:
@@ -119,12 +121,27 @@ def compare_files(source,destination):
 
 
 
-if __name__ == "__main__":
-    source_directory = input("Enter the Source Directory: ")
+def main():
+    source_directory = input("Enter the Source Directory: ").strip()
+    if not Path(source_directory).is_dir():
+        print("Invalid source directory!")
+        return
     source_directory_dict = collect_file_metadata(source_directory,source_directory)
+    # Passing the same path twice:
+    # first argument = working path (may change during recursion)
+    # second argument = original base path (remains constant for relative calculations)
     print_metadata(source_directory_dict,"Source Path")
-    destination_directory = input("Enter the Destination Directory: ")
+    destination_directory = input("Enter the Destination Directory: ").strip()
+    if not Path(destination_directory).is_dir():
+        print("Invalid destination directory!")
+        return
+    if Path(source_directory).resolve() == Path(destination_directory).resolve():
+        print("Source and destination cannot be the same!")
+        return
     destination_directory_dict = collect_file_metadata(destination_directory,destination_directory)
+    # Passing the same path twice:
+    # first argument = working path (may change during recursion)
+    # second argument = original base path (remains constant for relative calculations)
     print_metadata(destination_directory_dict,"Destination Path")
 
     sync_diff = compare_files(source_directory_dict,destination_directory_dict)
@@ -132,24 +149,41 @@ if __name__ == "__main__":
 
     while True:
         print("Proceed with synchronization? (y/n):")
-        choice = input("Enter Choice: ").lower()
+        choice = input("Enter Choice: ").strip().lower()
 
         if choice == "n":
-            sys.exit()
+            return 
         elif choice == "y":
             break
         else:
             print("Invalid Choice!!")
     
-    sync_to_destination(source_directory,destination_directory,sync_diff)
+    try:
+        sync_to_destination(source_directory, destination_directory, sync_diff)
+    except Exception as e:
+        print(f"Error during sync: {e}")
+        if DEBUG:
+            raise
+        return
     while True:
         print("Proceed with Deletion of unique files in destination? (y/n):")
-        choice = input("Enter Choice: ").lower()
+        choice = input("Enter Choice: ").strip().lower()
 
         if choice == "n":
-            sys.exit()
+            return
         elif choice == "y":
             break
         else:
             print("Invalid Choice!!")
-    remove_missing(destination_directory,sync_diff)
+    try:
+        remove_missing(destination_directory, sync_diff)
+    except Exception as e:
+        print(f"Error during deletion: {e}")
+        if DEBUG:
+            raise
+        return
+
+
+
+if __name__ == "__main__":
+    main()
